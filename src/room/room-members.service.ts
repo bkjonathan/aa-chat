@@ -246,4 +246,21 @@ export class RoomMembersService {
       data: { unreadCount: { increment: 1 } },
     });
   }
+
+  // Add to RoomMembersService class
+  async getUserRoomIds(userId: string): Promise<string[]> {
+    const memberships = await this.prisma.roomMember.findMany({
+      where: { userId, leftAt: null },
+      select: { roomId: true },
+    });
+    return memberships.map((m) => m.roomId);
+  }
+
+  async getRoomMemberIds(roomId: string): Promise<string[]> {
+    const members = await this.prisma.roomMember.findMany({
+      where: { roomId, leftAt: null },
+      select: { userId: true },
+    });
+    return members.map((m) => m.userId);
+  }
 }

@@ -11,6 +11,9 @@ import { UsersModule } from './users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RoomsModule } from './room/rooms.module';
+import { GatewayModule } from './gateway/gateway.module';
+import { MessagesModule } from './messages/messages.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { RoomsModule } from './room/rooms.module';
     AuthModule,
     UsersModule,
     RoomsModule,
+    MessagesModule,
+    RedisModule,
+    GatewayModule,
     // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
   ],
   providers: [
