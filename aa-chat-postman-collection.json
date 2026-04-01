@@ -1,0 +1,1551 @@
+{
+  "info": {
+    "name": "AA Chat API — Full Collection",
+    "description": "Complete REST + Socket.IO collection for AA Chat backend.\n\n## Setup\n1. Set `baseUrl` variable (default: `http://localhost:3000`)\n2. Run **Auth / Register** or **Auth / Login** — the collection auto-saves `accessToken` and `refreshToken`\n3. All protected endpoints use `{{accessToken}}` automatically via the collection-level Auth tab\n\n## Variable Reference\n| Variable | Description |\n|---|---|\n| `baseUrl` | Backend base URL |\n| `accessToken` | JWT access token (auto-set on login/register) |\n| `refreshToken` | JWT refresh token (auto-set on login/register) |\n| `userId` | Current user ID (auto-set on login/register) |\n| `roomId` | Room ID for room-scoped requests |\n| `messageId` | Message ID |\n| `fileId` | File ID |\n| `inviteCode` | Room invite code |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "aa-chat"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:3000", "type": "string" },
+    { "key": "accessToken",  "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "userId",       "value": "", "type": "string" },
+    { "key": "roomId",       "value": "", "type": "string" },
+    { "key": "messageId",    "value": "", "type": "string" },
+    { "key": "fileId",       "value": "", "type": "string" },
+    { "key": "targetUserId", "value": "", "type": "string" },
+    { "key": "inviteCode",   "value": "", "type": "string" },
+    { "key": "inviteId",     "value": "", "type": "string" },
+    { "key": "notificationId","value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "description": "Authentication endpoints — register, login, token refresh, logout.",
+      "item": [
+
+        {
+          "name": "Register",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('accessToken',  d.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                "  pm.collectionVariables.set('userId',       d.user.id);",
+                "  pm.test('Register successful', () => pm.response.to.have.status(201));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password1!\",\n  \"displayName\": \"John Doe\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new account.\n\n**Validation rules:**\n- `username`: 3–50 chars, alphanumeric + underscore\n- `password`: 8–100 chars, must contain uppercase, lowercase, digit, special char\n- `displayName`: optional, max 100 chars\n\nOn success the test script saves `accessToken`, `refreshToken`, and `userId` to collection variables."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"username\": \"johndoe\",\n      \"email\": \"john@example.com\",\n      \"displayName\": \"John Doe\",\n      \"avatarUrl\": null,\n      \"bio\": null,\n      \"status\": \"online\",\n      \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2026-04-01T10:00:00.000Z\",\n  \"path\": \"/api/v1/auth/register\"\n}"
+          }]
+        },
+
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('accessToken',  d.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                "  pm.collectionVariables.set('userId',       d.user.id);",
+                "  pm.test('Login successful', () => pm.response.to.have.status(200));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"Password1!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Authenticate with email + password.\n\nOn success saves `accessToken`, `refreshToken`, `userId` to collection variables."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"username\": \"johndoe\",\n      \"email\": \"john@example.com\",\n      \"displayName\": \"John Doe\",\n      \"avatarUrl\": null,\n      \"status\": \"online\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }, {
+            "name": "401 Unauthorized",
+            "status": "Unauthorized",
+            "code": 401,
+            "body": "{\n  \"statusCode\": 401,\n  \"message\": \"Invalid credentials\",\n  \"error\": \"Unauthorized\"\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Refresh Token",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('accessToken',  d.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","refresh"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Rotate the refresh token. Both old tokens are invalidated and new ones are returned.\n\nUses `{{refreshToken}}` collection variable. Updates both tokens on success."
+          },
+          "response": [{
+            "name": "200 OK — New token pair",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": { \"id\": \"uuid-user-1\", \"username\": \"johndoe\" },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...NEW\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...NEW\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get Me (current user)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","me"] },
+            "description": "Returns the authenticated user's profile from the JWT payload."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-user-1\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"displayName\": \"John Doe\",\n    \"avatarUrl\": null,\n    \"bio\": \"Hello world\",\n    \"status\": \"online\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Logout (current device)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","logout"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Invalidates the provided refresh token. The access token expires naturally (short-lived)."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout-all", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","logout-all"] },
+            "description": "Revokes ALL refresh tokens for the current user. Forces re-login on every device."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "👤 Users",
+      "description": "User profile management, settings, blocking.",
+      "item": [
+
+        {
+          "name": "List / Search Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?search=john&page=1&limit=20",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","users"],
+              "query": [
+                { "key": "search", "value": "john",  "description": "Partial match on username or displayName" },
+                { "key": "page",   "value": "1",     "description": "Page number (default 1)" },
+                { "key": "limit",  "value": "20",    "description": "Results per page (1–50, default 20)" }
+              ]
+            },
+            "description": "Paginated user list with optional search."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-user-1\",\n        \"username\": \"johndoe\",\n        \"displayName\": \"John Doe\",\n        \"avatarUrl\": null,\n        \"status\": \"online\"\n      }\n    ],\n    \"total\": 1,\n    \"page\": 1,\n    \"limit\": 20\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me"] },
+            "description": "Returns sanitized profile for the authenticated user (no passwordHash)."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-user-1\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"displayName\": \"John Doe\",\n    \"avatarUrl\": \"https://cdn.example.com/avatars/uuid-user-1.jpg\",\n    \"bio\": \"Chat enthusiast\",\n    \"status\": \"online\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\",\n    \"updatedAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","{{targetUserId}}"] },
+            "description": "Get any user's public profile by UUID."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-user-2\",\n    \"username\": \"janedoe\",\n    \"displayName\": \"Jane Doe\",\n    \"avatarUrl\": null,\n    \"bio\": null,\n    \"status\": \"away\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"John D.\",\n  \"bio\": \"Backend developer @ AA\",\n  \"status\": \"dnd\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "All fields optional.\n\n`status` enum: `online | away | dnd | offline`"
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-user-1\",\n    \"displayName\": \"John D.\",\n    \"bio\": \"Backend developer @ AA\",\n    \"status\": \"dnd\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Update Avatar URL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/avatar", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","avatar"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatarUrl\": \"https://cdn.example.com/avatars/uuid-user-1.jpg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update the user's avatar URL. Typically called after uploading to S3 via the Files module."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-user-1\",\n    \"avatarUrl\": \"https://cdn.example.com/avatars/uuid-user-1.jpg\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get My Settings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/settings", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","settings"] },
+            "description": "Retrieve the current user's app settings (notifications, theme, language, timezone)."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"notificationSound\": true,\n    \"desktopNotifications\": true,\n    \"theme\": \"dark\",\n    \"language\": \"en\",\n    \"timezone\": \"Asia/Bangkok\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Update My Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/settings", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","settings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notificationSound\": false,\n  \"desktopNotifications\": true,\n  \"theme\": \"dark\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Bangkok\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "All fields optional.\n\n`theme` enum: `light | dark | system`"
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"notificationSound\": false,\n    \"desktopNotifications\": true,\n    \"theme\": \"dark\",\n    \"language\": \"en\",\n    \"timezone\": \"Asia/Bangkok\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Block User",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/block/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","block","{{targetUserId}}"] },
+            "description": "Block a user by their UUID. Blocked users cannot send you DMs."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"blockerId\": \"uuid-user-1\",\n    \"blockedId\": \"uuid-user-2\",\n    \"createdAt\": \"2026-04-01T10:05:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Unblock User",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/block/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","block","{{targetUserId}}"] },
+            "description": "Remove a block relationship."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Get Blocked Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/blocked", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","blocked"] },
+            "description": "List all users the current user has blocked."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-user-2\",\n      \"username\": \"spammer\",\n      \"displayName\": \"Spammer\",\n      \"avatarUrl\": null,\n      \"status\": \"offline\"\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏠 Rooms",
+      "description": "Room CRUD, membership management, invites.",
+      "item": [
+
+        {
+          "name": "Get My Rooms",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rooms?type=group&search=general",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","rooms"],
+              "query": [
+                { "key": "type",   "value": "group",   "description": "Filter: dm | group | channel", "disabled": true },
+                { "key": "search", "value": "general", "description": "Name search",                 "disabled": true }
+              ]
+            },
+            "description": "Returns all rooms the current user is a member of. Optionally filter by `type` and `search`."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-room-1\",\n      \"type\": \"channel\",\n      \"name\": \"general\",\n      \"slug\": \"general\",\n      \"description\": \"General discussion\",\n      \"isPrivate\": false,\n      \"isArchived\": false,\n      \"ownerId\": \"uuid-user-1\",\n      \"createdAt\": \"2026-04-01T08:00:00.000Z\",\n      \"unreadCount\": 3,\n      \"lastMessage\": {\n        \"id\": \"uuid-msg-99\",\n        \"content\": \"Hello everyone!\",\n        \"createdAt\": \"2026-04-01T09:55:00.000Z\"\n      }\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Create Room",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('roomId', d.id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"group\",\n  \"name\": \"My Team Room\",\n  \"slug\": \"my-team-room\",\n  \"description\": \"Private room for our team\",\n  \"isPrivate\": true,\n  \"memberIds\": [\"uuid-user-2\", \"uuid-user-3\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new room.\n\n**`type` enum:** `dm | group | channel`\n- `dm` — exactly 2 members, no name required\n- `group` — 2+ members, name required\n- `channel` — broadcast channel, name required\n\n`memberIds` max 100 UUIDs. Creator is automatically added as `owner`.\n\nSaves `roomId` to collection variables on success."
+          },
+          "response": [
+            {
+              "name": "201 — Channel",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-room-1\",\n    \"type\": \"channel\",\n    \"name\": \"announcements\",\n    \"slug\": \"announcements\",\n    \"description\": \"Company announcements\",\n    \"isPrivate\": false,\n    \"isArchived\": false,\n    \"ownerId\": \"uuid-user-1\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            },
+            {
+              "name": "201 — DM",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-room-dm-1\",\n    \"type\": \"dm\",\n    \"name\": null,\n    \"isPrivate\": true,\n    \"ownerId\": \"uuid-user-1\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            }
+          ]
+        },
+
+        {
+          "name": "Get Room by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}"] },
+            "description": "Fetch full room details. User must be a member."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-room-1\",\n    \"type\": \"group\",\n    \"name\": \"My Team Room\",\n    \"description\": \"Private room for our team\",\n    \"isPrivate\": true,\n    \"isArchived\": false,\n    \"ownerId\": \"uuid-user-1\",\n    \"memberCount\": 3,\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Room Name\",\n  \"description\": \"New description\",\n  \"isPrivate\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update room metadata. Requires `admin` or `owner` role."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-room-1\",\n    \"name\": \"Updated Room Name\",\n    \"description\": \"New description\",\n    \"isPrivate\": false\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Archive Room",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/archive", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","archive"] },
+            "description": "Archive a room. Owner only. Archived rooms are read-only."
+          },
+          "response": [{ "name": "200 OK — archived room", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"id\": \"uuid-room-1\", \"isArchived\": true }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Unarchive Room",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/unarchive", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","unarchive"] },
+            "description": "Restore an archived room. Owner only."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"id\": \"uuid-room-1\", \"isArchived\": false }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Get Room Members",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/members", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","members"] },
+            "description": "List all members with their roles, mute status, and join date."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"userId\": \"uuid-user-1\",\n      \"username\": \"johndoe\",\n      \"displayName\": \"John Doe\",\n      \"role\": \"owner\",\n      \"isMuted\": false,\n      \"mutedUntil\": null,\n      \"joinedAt\": \"2026-04-01T10:00:00.000Z\"\n    },\n    {\n      \"userId\": \"uuid-user-2\",\n      \"username\": \"janedoe\",\n      \"displayName\": \"Jane Doe\",\n      \"role\": \"member\",\n      \"isMuted\": false,\n      \"mutedUntil\": null,\n      \"joinedAt\": \"2026-04-01T10:01:00.000Z\"\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Update Member (role / mute)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/members/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","members","{{targetUserId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\",\n  \"isMuted\": true,\n  \"mutedUntil\": \"2026-04-08T00:00:00.000Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Change a member's role or mute status. Requires `admin` or `owner`.\n\n`role` enum: `owner | admin | member`\n`mutedUntil` — ISO8601 datetime, `null` to unmute"
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"userId\": \"uuid-user-2\",\n    \"role\": \"admin\",\n    \"isMuted\": true,\n    \"mutedUntil\": \"2026-04-08T00:00:00.000Z\"\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/members/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","members","{{targetUserId}}"] },
+            "description": "Kick a member from the room. Requires `admin` or `owner`."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Leave Room",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/leave", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","leave"] },
+            "description": "Current user voluntarily leaves the room. If owner, must transfer ownership first."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Transfer Ownership",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/transfer-ownership", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","transfer-ownership"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newOwnerId\": \"{{targetUserId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Transfer owner role to another member. Current user becomes `admin`. Owner only."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"id\": \"uuid-room-1\", \"ownerId\": \"uuid-user-2\" }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Mark Room as Read",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/read", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","read"] },
+            "description": "Marks all messages in the room as read for the current user. Resets unread count."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Create Invite Link",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('inviteId',   d.id);",
+                "  pm.collectionVariables.set('inviteCode', d.code);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/invites", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","invites"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxUses\": 10,\n  \"expiresAt\": \"2026-04-30T00:00:00.000Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a shareable invite link. Requires `admin` or `owner`.\n\n- `maxUses`: 1–1000, omit for unlimited\n- `expiresAt`: ISO8601 datetime, omit for no expiry\n\nSaves `inviteId` and `inviteCode` to collection variables."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-invite-1\",\n    \"code\": \"AbCdEfGh\",\n    \"roomId\": \"uuid-room-1\",\n    \"createdById\": \"uuid-user-1\",\n    \"maxUses\": 10,\n    \"useCount\": 0,\n    \"expiresAt\": \"2026-04-30T00:00:00.000Z\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "List Room Invites",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/invites", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","invites"] },
+            "description": "Get all active invite links for a room. Requires `admin` or `owner`."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-invite-1\",\n      \"code\": \"AbCdEfGh\",\n      \"maxUses\": 10,\n      \"useCount\": 2,\n      \"expiresAt\": \"2026-04-30T00:00:00.000Z\"\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Delete Invite Link",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/invites/{{inviteId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","invites","{{inviteId}}"] },
+            "description": "Revoke an invite link."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Join via Invite Code",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/invites/{{inviteCode}}/join", "host": ["{{baseUrl}}"], "path": ["api","v1","invites","{{inviteCode}}","join"] },
+            "description": "Join a room using a short invite code (e.g. `AbCdEfGh`). The invite must not be expired or fully used."
+          },
+          "response": [{
+            "name": "200 OK — joined room",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-room-1\",\n    \"name\": \"My Team Room\",\n    \"type\": \"group\",\n    \"isPrivate\": true\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "💬 Messages",
+      "description": "Send, edit, delete, react, pin, and read messages. Thread support.",
+      "item": [
+
+        {
+          "name": "Get Messages (room)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/messages?limit=30",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","messages"],
+              "query": [
+                { "key": "limit",    "value": "30",            "description": "1–100, default 30" },
+                { "key": "cursor",   "value": "",              "description": "UUID of last message (for pagination)", "disabled": true },
+                { "key": "parentId", "value": "",              "description": "Filter to thread replies only",         "disabled": true },
+                { "key": "search",   "value": "",              "description": "Full-text search within room",          "disabled": true },
+                { "key": "before",   "value": "",              "description": "ISO8601 datetime upper bound",          "disabled": true },
+                { "key": "after",    "value": "",              "description": "ISO8601 datetime lower bound",          "disabled": true }
+              ]
+            },
+            "description": "Cursor-paginated message history for a room.\n\nPass the last message's `id` as `cursor` to get older messages."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-msg-1\",\n        \"roomId\": \"uuid-room-1\",\n        \"senderId\": \"uuid-user-1\",\n        \"sender\": { \"id\": \"uuid-user-1\", \"username\": \"johndoe\", \"displayName\": \"John Doe\", \"avatarUrl\": null },\n        \"content\": \"Hello team!\",\n        \"type\": \"text\",\n        \"parentId\": null,\n        \"replyCount\": 2,\n        \"reactions\": { \"👍\": [\"uuid-user-2\"] },\n        \"isEdited\": false,\n        \"isDeleted\": false,\n        \"isPinned\": false,\n        \"createdAt\": \"2026-04-01T10:00:00.000Z\",\n        \"updatedAt\": \"2026-04-01T10:00:00.000Z\"\n      }\n    ],\n    \"nextCursor\": \"uuid-msg-1\",\n    \"hasMore\": true\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Send Message (REST)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('messageId', d.id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/messages", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","messages"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"content\": \"Hello via REST!\",\n  \"type\": \"text\",\n  \"parentId\": null,\n  \"fileId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Send a message via HTTP. For real-time delivery prefer the Socket.IO `message:send` event.\n\n`type` enum: `text | image | file | audio | system`\n`parentId` — set to a message UUID to create a thread reply\n`fileId` — UUID from Files module\n\nSaves `messageId` to collection variables."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-msg-1\",\n    \"roomId\": \"uuid-room-1\",\n    \"senderId\": \"uuid-user-1\",\n    \"content\": \"Hello via REST!\",\n    \"type\": \"text\",\n    \"parentId\": null,\n    \"reactions\": {},\n    \"isEdited\": false,\n    \"isDeleted\": false,\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get Message by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}"] },
+            "description": "Fetch a single message."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-msg-1\",\n    \"content\": \"Hello team!\",\n    \"type\": \"text\",\n    \"senderId\": \"uuid-user-1\",\n    \"roomId\": \"uuid-room-1\",\n    \"reactions\": {},\n    \"isEdited\": false,\n    \"isDeleted\": false,\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get Thread Replies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/thread?limit=30",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}","thread"],
+              "query": [
+                { "key": "limit",  "value": "30", "description": "1–100, default 30" },
+                { "key": "cursor", "value": "",   "description": "Cursor for pagination", "disabled": true }
+              ]
+            },
+            "description": "Get replies to a threaded message."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      { \"id\": \"uuid-msg-2\", \"content\": \"Replying to thread\", \"parentId\": \"uuid-msg-1\", \"createdAt\": \"2026-04-01T10:01:00.000Z\" }\n    ],\n    \"hasMore\": false,\n    \"nextCursor\": null\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Edit Message",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Edited: Hello team! (updated)\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Edit the content of a message. Own messages only. Sets `isEdited: true` and creates an edit history entry."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-msg-1\",\n    \"content\": \"Edited: Hello team! (updated)\",\n    \"isEdited\": true,\n    \"updatedAt\": \"2026-04-01T10:05:00.000Z\"\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}"] },
+            "description": "Soft-delete a message. Sets `isDeleted: true`, content is blanked. Own messages or admin/owner of room."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Get Edit History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/edits", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}","edits"] },
+            "description": "Get the full edit history of a message."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-edit-1\",\n      \"messageId\": \"uuid-msg-1\",\n      \"contentBefore\": \"Hello team!\",\n      \"editedAt\": \"2026-04-01T10:05:00.000Z\"\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "React to Message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/reactions", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}","reactions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emoji\": \"👍\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Toggle an emoji reaction. If the user already reacted with this emoji, it is removed (toggle behaviour)."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-msg-1\",\n    \"reactions\": {\n      \"👍\": [\"uuid-user-1\", \"uuid-user-2\"],\n      \"❤️\": [\"uuid-user-3\"]\n    }\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Mark Message as Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/read", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}","read"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Mark a specific message as read. Records a read receipt visible to other room members."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Get Read Receipts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/reads", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}","reads"] },
+            "description": "Get who has read this message and when."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"userId\": \"uuid-user-2\", \"username\": \"janedoe\", \"readAt\": \"2026-04-01T10:02:00.000Z\" }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Get Unread Count (room)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/unread", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","unread"] },
+            "description": "Number of unread messages in a specific room for the current user."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"count\": 7 }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Get Total Unread",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/unread/total", "host": ["{{baseUrl}}"], "path": ["api","v1","unread","total"] },
+            "description": "Total unread message count across all rooms the user belongs to."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"total\": 15 }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Get Pinned Messages",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/pins", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","pins"] },
+            "description": "Get all pinned messages in a room."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-msg-1\",\n      \"content\": \"Important announcement!\",\n      \"isPinned\": true,\n      \"pinnedAt\": \"2026-04-01T10:10:00.000Z\",\n      \"pinnedBy\": \"uuid-user-1\"\n    }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Pin Message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/pins", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","pins"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Pin a message in the room. Requires `admin` or `owner`."
+          },
+          "response": [{ "name": "201 Created", "status": "Created", "code": 201, "body": "{\n  \"success\": true,\n  \"data\": { \"messageId\": \"uuid-msg-1\", \"roomId\": \"uuid-room-1\", \"pinnedAt\": \"2026-04-01T10:10:00.000Z\" }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Unpin Message",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/{{roomId}}/pins/{{messageId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","rooms","{{roomId}}","pins","{{messageId}}"] },
+            "description": "Unpin a message. Requires `admin` or `owner`."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📁 Files",
+      "description": "S3 presigned URL upload flow and file management.",
+      "item": [
+
+        {
+          "name": "Request Presigned Upload URL",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('s3Key', d.s3Key);",
+                "  pm.environment.set('presignedUrl', d.presignedUrl);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/files/presigned-url", "host": ["{{baseUrl}}"], "path": ["api","v1","files","presigned-url"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"originalName\": \"screenshot.png\",\n  \"contentType\": \"image/png\",\n  \"sizeBytes\": 204800,\n  \"roomId\": \"{{roomId}}\",\n  \"messageId\": null,\n  \"isPublic\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "**Step 1 of 2-step S3 upload:**\n\nGet a presigned PUT URL from S3.\n\n1. Call this endpoint to get `presignedUrl` and `s3Key`\n2. PUT the file binary directly to `presignedUrl` (no auth header)\n3. Call **Confirm Upload** with `s3Key`\n\nSaves `s3Key` to collection variables."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"s3Key\": \"uploads/uuid-room-1/2026/04/screenshot-uuid.png\",\n    \"presignedUrl\": \"https://s3.amazonaws.com/bucket/uploads/...?X-Amz-Signature=...\",\n    \"expiresIn\": 300\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Confirm S3 Upload",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  const d = body.data || body;",
+                "  pm.collectionVariables.set('fileId', d.id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/files/confirm", "host": ["{{baseUrl}}"], "path": ["api","v1","files","confirm"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"s3Key\": \"{{s3Key}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"originalName\": \"screenshot.png\",\n  \"contentType\": \"image/png\",\n  \"sizeBytes\": 204800,\n  \"messageId\": null,\n  \"isPublic\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "**Step 2 of 2-step S3 upload:**\n\nAfter successfully PUTting the file to S3, confirm the upload here. This persists file metadata to the database.\n\nSaves `fileId` to collection variables."
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-file-1\",\n    \"s3Key\": \"uploads/uuid-room-1/2026/04/screenshot-uuid.png\",\n    \"originalName\": \"screenshot.png\",\n    \"contentType\": \"image/png\",\n    \"sizeBytes\": 204800,\n    \"isPublic\": false,\n    \"uploadedById\": \"uuid-user-1\",\n    \"roomId\": \"uuid-room-1\",\n    \"createdAt\": \"2026-04-01T10:15:00.000Z\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Direct Upload (multipart)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/files/upload", "host": ["{{baseUrl}}"], "path": ["api","v1","files","upload"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file",   "type": "file",  "src": "",             "description": "Binary file content" },
+                { "key": "roomId", "type": "text",  "value": "{{roomId}}", "description": "Optional room to attach file to" }
+              ]
+            },
+            "description": "Server-side upload. The server proxies the file to S3. Use for smaller files or when presigned URL flow is not available.\n\n**Content-Type**: `multipart/form-data` (set automatically by Postman)"
+          },
+          "response": [{
+            "name": "201 Created",
+            "status": "Created",
+            "code": 201,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-file-2\",\n    \"originalName\": \"document.pdf\",\n    \"contentType\": \"application/pdf\",\n    \"sizeBytes\": 51200,\n    \"url\": \"https://cdn.example.com/files/document-uuid.pdf\"\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get File Download URL",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/files/{{fileId}}/url", "host": ["{{baseUrl}}"], "path": ["api","v1","files","{{fileId}}","url"] },
+            "description": "Get a short-lived presigned GET URL for downloading a private file."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://s3.amazonaws.com/bucket/uploads/...?X-Amz-Signature=...\",\n    \"expiresIn\": 3600\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "List Room Files",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/files/rooms/{{roomId}}?type=image",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","files","rooms","{{roomId}}"],
+              "query": [
+                { "key": "type", "value": "image", "description": "MIME type filter (e.g. image, application/pdf)", "disabled": true }
+              ]
+            },
+            "description": "List all files shared in a room. Optional MIME type filter."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-file-1\",\n      \"originalName\": \"screenshot.png\",\n      \"contentType\": \"image/png\",\n      \"sizeBytes\": 204800,\n      \"uploadedById\": \"uuid-user-1\",\n      \"createdAt\": \"2026-04-01T10:15:00.000Z\"\n    }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/files/{{fileId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","files","{{fileId}}"] },
+            "description": "Delete a file from S3 and the database. Own files or admin/owner of room."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🔍 Search",
+      "description": "Elasticsearch-powered full-text search across messages, users, and rooms.",
+      "item": [
+
+        {
+          "name": "Search Messages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/messages?query=hello&limit=20&sort=relevance",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","search","messages"],
+              "query": [
+                { "key": "query",          "value": "hello",      "description": "Search text (required)" },
+                { "key": "limit",          "value": "20",         "description": "1–50, default 20" },
+                { "key": "offset",         "value": "0",          "description": "Pagination offset" },
+                { "key": "sort",           "value": "relevance",  "description": "relevance | newest | oldest" },
+                { "key": "roomId",         "value": "",           "description": "Restrict to room",     "disabled": true },
+                { "key": "senderId",       "value": "",           "description": "Restrict to sender",   "disabled": true },
+                { "key": "after",          "value": "",           "description": "ISO8601 lower bound",  "disabled": true },
+                { "key": "before",         "value": "",           "description": "ISO8601 upper bound",  "disabled": true },
+                { "key": "includeThreads", "value": "true",       "description": "Include thread replies","disabled": true }
+              ]
+            },
+            "description": "Full-text search across all messages the user can access."
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-msg-5\",\n      \"content\": \"Hello world, this is a test message\",\n      \"highlight\": \"<em>Hello</em> world, this is a test message\",\n      \"roomId\": \"uuid-room-1\",\n      \"senderId\": \"uuid-user-1\",\n      \"createdAt\": \"2026-04-01T09:00:00.000Z\",\n      \"score\": 0.95\n    }\n  ]\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/users?query=jane&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","search","users"],
+              "query": [
+                { "key": "query",  "value": "jane", "description": "Search text (required, min 1 char)" },
+                { "key": "limit",  "value": "10",   "description": "1–30, default 10" },
+                { "key": "roomId", "value": "",      "description": "Restrict to room members", "disabled": true }
+              ]
+            },
+            "description": "Autocomplete user search."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": \"uuid-user-2\", \"username\": \"janedoe\", \"displayName\": \"Jane Doe\", \"avatarUrl\": null, \"status\": \"online\" }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Search Rooms",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/rooms?query=general&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","search","rooms"],
+              "query": [
+                { "key": "query", "value": "general", "description": "Search text (required, min 1 char)" },
+                { "key": "limit", "value": "10",       "description": "1–30, default 10" },
+                { "key": "type",  "value": "",          "description": "dm | group | channel", "disabled": true }
+              ]
+            },
+            "description": "Autocomplete room search."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": \"uuid-room-1\", \"name\": \"general\", \"type\": \"channel\", \"description\": \"General discussion\", \"memberCount\": 25 }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Trigger Reindex (admin)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/search/reindex", "host": ["{{baseUrl}}"], "path": ["api","v1","search","reindex"] },
+            "description": "Trigger a full Elasticsearch reindex. Admin utility — use sparingly."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"status\": \"reindexing\", \"startedAt\": \"2026-04-01T10:20:00.000Z\" }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🔔 Notifications",
+      "description": "In-app notifications and Web Push subscriptions.",
+      "item": [
+
+        {
+          "name": "Get VAPID Public Key",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/push/vapid-key", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","push","vapid-key"] },
+            "description": "Public endpoint. Returns the VAPID public key needed by the browser's Push API.\n\nNo authentication required."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"publicKey\": \"BLfKWnf2Xc7g...(base64url VAPID public key)...\"\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Subscribe to Push",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/push/subscribe", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","push","subscribe"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"https://fcm.googleapis.com/fcm/send/abc123...\",\n  \"keys\": {\n    \"p256dh\": \"BCO...base64url...\",\n    \"auth\": \"xyz...base64url...\"\n  },\n  \"deviceType\": \"web\",\n  \"userAgent\": \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Register a push subscription. Typically called after `navigator.serviceWorker.pushManager.subscribe()`.\n\n`deviceType` enum: `web | android | ios`"
+          },
+          "response": [{ "name": "201 Created", "status": "Created", "code": 201, "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid-sub-1\",\n    \"endpoint\": \"https://fcm.googleapis.com/fcm/send/abc123...\",\n    \"deviceType\": \"web\",\n    \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Unsubscribe Push (device)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/push/subscribe", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","push","subscribe"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"https://fcm.googleapis.com/fcm/send/abc123...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Remove a specific push subscription by endpoint."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Unsubscribe All Devices",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/push/subscribe/all", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","push","subscribe","all"] },
+            "description": "Removes ALL push subscriptions for the current user (all devices)."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "List Push Subscriptions",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/push/subscriptions", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","push","subscriptions"] },
+            "description": "Get all active push subscriptions for the current user."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-sub-1\",\n      \"endpoint\": \"https://fcm.googleapis.com/fcm/send/abc123...\",\n      \"deviceType\": \"web\",\n      \"userAgent\": \"Mozilla/5.0...\",\n      \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n    }\n  ]\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Get In-App Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?limit=20&unreadOnly=false",
+              "host": ["{{baseUrl}}"], "path": ["api","v1","notifications"],
+              "query": [
+                { "key": "limit",      "value": "20",    "description": "1–50, default 20" },
+                { "key": "unreadOnly", "value": "false", "description": "Only return unread notifications" },
+                { "key": "cursor",     "value": "",       "description": "Cursor for pagination", "disabled": true }
+              ]
+            },
+            "description": "Get paginated in-app notifications. Notification types: `mention | dm | reaction | invite`"
+          },
+          "response": [{
+            "name": "200 OK",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-notif-1\",\n        \"type\": \"mention\",\n        \"isRead\": false,\n        \"actorId\": \"uuid-user-2\",\n        \"actor\": { \"username\": \"janedoe\", \"displayName\": \"Jane Doe\" },\n        \"roomId\": \"uuid-room-1\",\n        \"messageId\": \"uuid-msg-1\",\n        \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n      }\n    ],\n    \"nextCursor\": \"uuid-notif-1\",\n    \"hasMore\": false\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Get Unread Notification Count",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","unread-count"] },
+            "description": "Badge count for the notification bell icon."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"success\": true,\n  \"data\": { \"unreadCount\": 5 }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Mark Notifications as Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/read", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","read"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"uuid-notif-1\", \"uuid-notif-2\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Mark specific notification IDs as read."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        },
+
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/read/all", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","read","all"] },
+            "description": "Mark every in-app notification as read. Resets the badge count to 0."
+          },
+          "response": [{ "name": "204 No Content", "status": "No Content", "code": 204, "body": "" }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "❤️ Health",
+      "description": "Kubernetes-style health probes and service status.",
+      "item": [
+
+        {
+          "name": "Full Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/health", "host": ["{{baseUrl}}"], "path": ["api","v1","health"] },
+            "description": "Returns status of all downstream services: PostgreSQL, Redis, Elasticsearch, memory heap, memory RSS, disk."
+          },
+          "response": [{
+            "name": "200 OK — all healthy",
+            "status": "OK",
+            "code": 200,
+            "body": "{\n  \"status\": \"ok\",\n  \"info\": {\n    \"postgres\":       { \"status\": \"up\" },\n    \"redis\":          { \"status\": \"up\" },\n    \"elasticsearch\":  { \"status\": \"up\" },\n    \"memory_heap\":    { \"status\": \"up\", \"usedHeapSize\": 52428800 },\n    \"memory_rss\":     { \"status\": \"up\" },\n    \"disk\":           { \"status\": \"up\", \"freeBytes\": 10737418240 }\n  },\n  \"error\": {},\n  \"details\": {\n    \"postgres\":      { \"status\": \"up\" },\n    \"redis\":         { \"status\": \"up\" },\n    \"elasticsearch\": { \"status\": \"up\" }\n  }\n}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }]
+        },
+
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/health/live", "host": ["{{baseUrl}}"], "path": ["api","v1","health","live"] },
+            "description": "Kubernetes liveness probe. Returns 200 if the process is alive."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2026-04-01T10:00:00.000Z\",\n  \"uptime\": 3600,\n  \"pid\": 1234\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/health/ready", "host": ["{{baseUrl}}"], "path": ["api","v1","health","ready"] },
+            "description": "Kubernetes readiness probe. Returns 200 only if all services are ready to handle traffic."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"status\": \"ok\",\n  \"info\": {\n    \"postgres\": { \"status\": \"up\" },\n    \"redis\":    { \"status\": \"up\" }\n  }\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        },
+
+        {
+          "name": "Ping",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/health/ping", "host": ["{{baseUrl}}"], "path": ["api","v1","health","ping"] },
+            "description": "Quick ping — no downstream checks."
+          },
+          "response": [{ "name": "200 OK", "status": "OK", "code": 200, "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2026-04-01T10:00:00.000Z\"\n}", "header": [{ "key": "Content-Type", "value": "application/json" }] }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "⚡ Socket.IO — Real-time",
+      "description": "## Socket.IO Connection\n\n**URL:** `{{baseUrl}}`  \n**Path:** `/socket.io`  \n**Transports:** `websocket, polling`\n\n### Authentication\nPass the JWT token in the handshake using ONE of:\n```js\n// Option 1 — handshake auth (preferred)\nconst socket = io('http://localhost:3000', {\n  auth: { token: 'Bearer eyJhbGci...' }\n});\n\n// Option 2 — query string\nconst socket = io('http://localhost:3000', {\n  query: { token: 'eyJhbGci...' }\n});\n\n// Option 3 — header (server-side clients)\nconst socket = io('http://localhost:3000', {\n  extraHeaders: { authorization: 'Bearer eyJhbGci...' }\n});\n```\n\nInvalid or missing token → socket is **disconnected** immediately.\n\n### Event Flow\n1. Connect with auth token\n2. Receive `connected` event with `socketId`\n3. Receive `presence:bulk` for all room members' statuses\n4. Join rooms with `room:join`\n5. Send/receive messages\n\n### Postman Socket.IO\nUse the **Socket.IO request type** in Postman (New → Socket.IO Request).  \nURL: `http://localhost:3000`  \nAdd header: `Authorization: Bearer {{accessToken}}`",
+      "item": [
+
+        {
+          "name": "CONNECT + receive 'connected'",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            }
+          },
+          "protocolProfileBehavior": { "disabledSystemHeaders": {} },
+          "description": "## Event: `connected` (Server → Client)\n\nAuto-emitted immediately after successful connection and auth.\n\n### Received payload\n```json\n{\n  \"socketId\": \"abc123xyz\",\n  \"userId\": \"uuid-user-1\",\n  \"timestamp\": \"2026-04-01T10:00:00.000Z\"\n}\n```\n\n### Also receives on connect\n`presence:bulk` — current presence status for all users in your rooms:\n```json\n{\n  \"presences\": {\n    \"uuid-user-2\": { \"status\": \"online\",  \"lastSeenAt\": \"2026-04-01T09:58:00.000Z\" },\n    \"uuid-user-3\": { \"status\": \"away\",    \"lastSeenAt\": \"2026-04-01T09:30:00.000Z\" },\n    \"uuid-user-4\": { \"status\": \"offline\", \"lastSeenAt\": \"2026-04-01T08:00:00.000Z\" }\n  }\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "room:join",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\"\n}"
+            }
+          },
+          "description": "## Event: `room:join` (Client → Server)\n\nJoin a Socket.IO room to start receiving real-time events for that room. Must be a member of the room.\n\n### Emit payload\n```json\n{ \"roomId\": \"uuid-room-1\" }\n```\n\n### Acknowledgement (callback)\n```json\n{ \"roomId\": \"uuid-room-1\", \"success\": true }\n```\n\n### JS example\n```js\nsocket.emit('room:join', { roomId: 'uuid-room-1' }, (ack) => {\n  console.log('Joined:', ack); // { roomId: '...', success: true }\n});\n```",
+          "response": []
+        },
+
+        {
+          "name": "room:leave",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\"\n}"
+            }
+          },
+          "description": "## Event: `room:leave` (Client → Server)\n\nLeave a Socket.IO room. You will stop receiving real-time events for this room until re-joining.\n\n### Emit payload\n```json\n{ \"roomId\": \"uuid-room-1\" }\n```\n\n### Acknowledgement\n```json\n{ \"roomId\": \"uuid-room-1\" }\n```",
+          "response": []
+        },
+
+        {
+          "name": "message:send → broadcast message:new",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"content\": \"Hello via Socket.IO!\",\n  \"type\": \"text\",\n  \"parentId\": null,\n  \"fileId\": null,\n  \"clientMessageId\": \"client-temp-uuid-001\"\n}"
+            }
+          },
+          "description": "## Event: `message:send` (Client → Server)\n\nSend a message via WebSocket. Preferred over REST for real-time delivery.\n\n### Emit payload\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"content\": \"Hello via Socket.IO!\",\n  \"type\": \"text\",\n  \"parentId\": null,\n  \"fileId\": null,\n  \"clientMessageId\": \"client-temp-uuid-001\"\n}\n```\n\n`clientMessageId` — your local temporary ID for optimistic UI updates.\n\n### Acknowledgement\n```json\n{ \"success\": true, \"messageId\": \"uuid-msg-new\" }\n```\n\n---\n\n## Event: `message:new` (Server → Client, broadcast)\n\nBroadcast to **all members** in the room.\n\n```json\n{\n  \"id\": \"uuid-msg-new\",\n  \"roomId\": \"uuid-room-1\",\n  \"senderId\": \"uuid-user-1\",\n  \"sender\": {\n    \"id\": \"uuid-user-1\",\n    \"username\": \"johndoe\",\n    \"displayName\": \"John Doe\",\n    \"avatarUrl\": null\n  },\n  \"content\": \"Hello via Socket.IO!\",\n  \"type\": \"text\",\n  \"parentId\": null,\n  \"reactions\": {},\n  \"isEdited\": false,\n  \"isDeleted\": false,\n  \"clientMessageId\": \"client-temp-uuid-001\",\n  \"createdAt\": \"2026-04-01T10:00:00.000Z\"\n}\n```\n\n### Thread reply example\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"content\": \"This is a thread reply\",\n  \"type\": \"text\",\n  \"parentId\": \"uuid-msg-1\",\n  \"clientMessageId\": \"client-temp-uuid-002\"\n}\n```\n\n### File message example\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"content\": \"Sharing a file\",\n  \"type\": \"file\",\n  \"fileId\": \"uuid-file-1\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "message:edit → broadcast message:updated",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\",\n  \"content\": \"Edited content via socket\"\n}"
+            }
+          },
+          "description": "## Event: `message:edit` (Client → Server)\n\nEdit a message via WebSocket. Own messages only.\n\n### Emit payload\n```json\n{ \"messageId\": \"uuid-msg-1\", \"content\": \"Edited content via socket\" }\n```\n\n### Acknowledgement\n```json\n{ \"success\": true }\n```\n\n---\n\n## Event: `message:updated` (Server → Client, broadcast)\n\nBroadcast to all room members.\n\n```json\n{\n  \"id\": \"uuid-msg-1\",\n  \"roomId\": \"uuid-room-1\",\n  \"content\": \"Edited content via socket\",\n  \"isEdited\": true,\n  \"updatedAt\": \"2026-04-01T10:05:00.000Z\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "message:delete → broadcast message:deleted",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\"\n}"
+            }
+          },
+          "description": "## Event: `message:delete` (Client → Server)\n\nSoft-delete a message via WebSocket.\n\n### Emit payload\n```json\n{ \"messageId\": \"uuid-msg-1\" }\n```\n\n### Acknowledgement\n```json\n{ \"success\": true }\n```\n\n---\n\n## Event: `message:deleted` (Server → Client, broadcast)\n\n```json\n{\n  \"messageId\": \"uuid-msg-1\",\n  \"roomId\": \"uuid-room-1\",\n  \"deletedAt\": \"2026-04-01T10:10:00.000Z\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "message:react → broadcast message:reaction",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\",\n  \"emoji\": \"👍\"\n}"
+            }
+          },
+          "description": "## Event: `message:react` (Client → Server)\n\nToggle an emoji reaction via WebSocket.\n\n### Emit payload\n```json\n{ \"messageId\": \"uuid-msg-1\", \"emoji\": \"👍\" }\n```\n\n### Acknowledgement\n```json\n{ \"success\": true }\n```\n\n---\n\n## Event: `message:reaction` (Server → Client, broadcast)\n\n```json\n{\n  \"messageId\": \"uuid-msg-1\",\n  \"roomId\": \"uuid-room-1\",\n  \"reactions\": {\n    \"👍\": [\"uuid-user-1\", \"uuid-user-2\"],\n    \"❤️\": [\"uuid-user-3\"]\n  },\n  \"actorId\": \"uuid-user-1\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "message:read → broadcast message:read_receipt",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"messageId\": \"{{messageId}}\"\n}"
+            }
+          },
+          "description": "## Event: `message:read` (Client → Server)\n\nMark a message as read via WebSocket.\n\n### Emit payload\n```json\n{ \"roomId\": \"uuid-room-1\", \"messageId\": \"uuid-msg-1\" }\n```\n\n### Acknowledgement\n```json\n{ \"success\": true }\n```\n\n---\n\n## Event: `message:read_receipt` (Server → Client, broadcast)\n\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"messageId\": \"uuid-msg-1\",\n  \"userId\": \"uuid-user-2\",\n  \"readAt\": \"2026-04-01T10:02:00.000Z\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "typing:start → broadcast typing:user",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\"\n}"
+            }
+          },
+          "description": "## Event: `typing:start` (Client → Server)\n\nNotify room that the current user is typing. Auto-stops after 5 s of inactivity.\n\n### Emit payload\n```json\n{ \"roomId\": \"uuid-room-1\" }\n```\n\n---\n\n## Event: `typing:user` (Server → Client, broadcast to other members)\n\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"userId\": \"uuid-user-1\",\n  \"username\": \"johndoe\"\n}\n```\n\n**Note:** The server does NOT echo back to the sender.",
+          "response": []
+        },
+
+        {
+          "name": "typing:stop → broadcast typing:stop",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\"\n}"
+            }
+          },
+          "description": "## Event: `typing:stop` (Client → Server)\n\nExplicitly stop the typing indicator before the 5 s auto-timeout.\n\n### Emit payload\n```json\n{ \"roomId\": \"uuid-room-1\" }\n```\n\n---\n\n## Event: `typing:stop` (Server → Client, broadcast)\n\n```json\n{\n  \"roomId\": \"uuid-room-1\",\n  \"userId\": \"uuid-user-1\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "status:update → broadcast presence:updated",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"away\"\n}"
+            }
+          },
+          "description": "## Event: `status:update` (Client → Server)\n\nUpdate the current user's presence status.\n\n### Emit payload\n```json\n{ \"status\": \"away\" }\n```\n\n`status` enum: `online | away | dnd`  \n(Use `offline` only when disconnecting — it is set automatically)\n\n### Acknowledgement\n```json\n{ \"status\": \"away\" }\n```\n\n---\n\n## Event: `presence:updated` (Server → Client, broadcast to all user's rooms)\n\n```json\n{\n  \"userId\": \"uuid-user-1\",\n  \"status\": \"away\",\n  \"lastSeenAt\": \"2026-04-01T10:15:00.000Z\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "heartbeat (keep-alive)",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "description": "## Event: `heartbeat` (Client → Server)\n\nKeep-alive ping. Emit periodically (e.g. every 30 s) to maintain presence and prevent idle disconnection.\n\n### Emit payload\n```json\n{}\n```\n\n### Acknowledgement\n```json\n{ \"ts\": 1743494400000 }\n```\n\n### JS example\n```js\nsetInterval(() => {\n  socket.emit('heartbeat', {}, (ack) => {\n    console.log('Server time:', new Date(ack.ts));\n  });\n}, 30_000);\n```",
+          "response": []
+        },
+
+        {
+          "name": "room:updated (Server → Client only)",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "description": "## Event: `room:updated` (Server → Client, broadcast)\n\nEmitted when room metadata changes (name, description, archive status).\n\n**This is a RECEIVE-only event** — clients cannot emit it.\n\n### Received payload\n```json\n{\n  \"id\": \"uuid-room-1\",\n  \"name\": \"Updated Name\",\n  \"description\": \"Updated description\",\n  \"isArchived\": false,\n  \"updatedAt\": \"2026-04-01T10:20:00.000Z\"\n}\n```",
+          "response": []
+        },
+
+        {
+          "name": "error (Server → Client only)",
+          "request": {
+            "url": "{{baseUrl}}",
+            "method": "SOCKETIO",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "description": "## Event: `error` (Server → Client)\n\nEmitted when an operation fails on the server side.\n\n**This is a RECEIVE-only event.**\n\n### Common error scenarios\n| Scenario | message |\n|---|---|\n| Not a room member | `\"Not authorized to join this room\"` |\n| Room not found | `\"Room not found\"` |\n| Message too long | `\"content must be shorter than or equal to 10000 characters\"` |\n| Rate limited | `\"Too many requests\"` |\n\n### Received payload\n```json\n{ \"message\": \"Not authorized to join this room\" }\n```\n\n### JS example\n```js\nsocket.on('error', (err) => {\n  console.error('Socket error:', err.message);\n  showToast(err.message, 'error');\n});\n```",
+          "response": []
+        }
+
+      ]
+    },
+
+    {
+      "name": "📖 Quick Reference",
+      "description": "## Global Response Envelope\n\nAll REST responses are wrapped by `TransformInterceptor`:\n\n```json\n{\n  \"success\": true,\n  \"data\": { /* actual payload */ },\n  \"timestamp\": \"2026-04-01T10:00:00.000Z\",\n  \"path\": \"/api/v1/...\"\n}\n```\n\n## Error Response\n\n```json\n{\n  \"statusCode\": 400,\n  \"message\": \"Validation failed: content must be a string\",\n  \"error\": \"Bad Request\"\n}\n```\n\n## Enums\n\n| Enum | Values |\n|---|---|\n| `RoomType` | `dm`, `group`, `channel` |\n| `MemberRole` | `owner`, `admin`, `member` |\n| `MessageType` | `text`, `image`, `file`, `audio`, `system` |\n| `UserStatus` | `online`, `away`, `dnd`, `offline` |\n| `Theme` | `light`, `dark`, `system` |\n| `DeviceType` | `web`, `android`, `ios` |\n| `NotificationType` | `mention`, `dm`, `reaction`, `invite` |\n| `SearchSortOrder` | `relevance`, `newest`, `oldest` |\n\n## Pagination Patterns\n\n**Offset pagination** (Users list)\n```\nGET /users?page=2&limit=20\n```\n\n**Cursor pagination** (Messages, Notifications)\n```\nGET /rooms/:id/messages?cursor=<lastMessageId>&limit=30\n```\nNext page: pass `data.nextCursor` as `cursor`. Stop when `hasMore: false`.\n\n## Authentication Header\n\n```\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n```\n\n## Rate Limiting\n\nAuth endpoints are rate-limited. Headers returned:\n```\nx-ratelimit-limit: 10\nx-ratelimit-remaining: 9\n```\n429 is returned when exceeded.",
+      "item": []
+    }
+
+  ]
+}
