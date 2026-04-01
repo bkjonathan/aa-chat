@@ -13,7 +13,12 @@ import { CreateInviteDto } from './dto/create-invite.dto';
 import { QueryRoomsDto } from './dto/query-rooms.dto';
 import { MemberRole, RoomType, Prisma } from '@prisma/client';
 import { customAlphabet } from 'nanoid';
-
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  RoomCreatedEvent,
+  RoomUpdatedEvent,
+  SEARCH_EVENTS,
+} from 'src/search/search.events';
 const nanoid = customAlphabet(
   'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
   10,
@@ -24,6 +29,7 @@ export class RoomsService {
   constructor(
     private prisma: PrismaService,
     private membersService: RoomMembersService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // ─── Select shape for room list ──────────────────────
@@ -186,6 +192,23 @@ export class RoomsService {
       await this.membersService.addMembers(room.id, dto.memberIds);
     }
 
+    if (room.type !== 'dm') {
+      this.eventEmitter.emit(
+        SEARCH_EVENTS.ROOM_CREATED,
+        new RoomCreatedEvent({
+          id: room.id,
+          type: room.type,
+          name: room.name,
+          slug: room.slug,
+          description: room.description,
+          isPrivate: room.isPrivate,
+          isArchived: room.isArchived,
+          memberCount: 1,
+          lastMessageAt: room.lastMessageAt,
+          createdAt: room.createdAt,
+        }),
+      );
+    }
     return room;
   }
 
@@ -249,7 +272,7 @@ export class RoomsService {
 
     await this.membersService.requireRole(roomId, actorId, MemberRole.admin);
 
-    return this.prisma.room.update({
+    const updatedRooms = this.prisma.room.update({
       where: { id: roomId },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -258,6 +281,15 @@ export class RoomsService {
       },
       select: this.roomSelect,
     });
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.ROOM_UPDATED,
+      new RoomUpdatedEvent(roomId, {
+        name: dto.name,
+        description: dto.description,
+        isPrivate: dto.isPrivate,
+      }),
+    );
+    return updatedRooms;
   }
 
   // ─── Archive room ────────────────────────────────────
@@ -268,11 +300,17 @@ export class RoomsService {
 
     await this.membersService.requireRole(roomId, actorId, MemberRole.owner);
 
-    return this.prisma.room.update({
+    const updateResult = this.prisma.room.update({
       where: { id: roomId },
       data: { isArchived: true },
       select: this.roomSelect,
     });
+
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.ROOM_UPDATED,
+      new RoomUpdatedEvent(roomId, { isArchived: true }),
+    );
+    return updateResult;
   }
 
   async unarchive(roomId: string, actorId: string) {

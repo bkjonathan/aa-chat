@@ -18,6 +18,9 @@ import awsConfig from './config/aws.config';
 import pushConfig from './config/push.config';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
+import elasticsearchConfig from './config/elasticsearch.config';
+import { SearchModule } from './search/search.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -30,6 +33,7 @@ import { FilesModule } from './files/files.module';
         redisConfig,
         awsConfig,
         pushConfig,
+        elasticsearchConfig,
       ],
       envFilePath: '.env',
     }),
@@ -43,6 +47,14 @@ import { FilesModule } from './files/files.module';
     GatewayModule,
     FilesModule,
     NotificationsModule,
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      maxListeners: 20,
+      verboseMemoryLeak: true,
+      ignoreErrors: false,
+    }),
+    SearchModule,
     // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
   ],
   providers: [

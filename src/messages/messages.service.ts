@@ -13,6 +13,13 @@ import { MessageType, Prisma } from '@prisma/client';
 import { RoomMembersService } from 'src/room/room-members.service';
 import { RoomsService } from 'src/room/rooms.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  MessageCreatedEvent,
+  MessageDeletedEvent,
+  MessageUpdatedEvent,
+  SEARCH_EVENTS,
+} from 'src/search/search.events';
 
 // ─── Shared include shape ─────────────────────────────
 
@@ -64,6 +71,7 @@ export class MessagesService {
     private roomMembersService: RoomMembersService,
     private roomsService: RoomsService,
     private notificationsService: NotificationsService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // ─── Group reactions by emoji ─────────────────────────
@@ -177,6 +185,25 @@ export class MessagesService {
 
       return created;
     });
+
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.MESSAGE_CREATED,
+      new MessageCreatedEvent({
+        id: message.id,
+        roomId: message.roomId,
+        senderId: message.senderId,
+        senderUsername: message.sender?.username ?? '',
+        senderDisplayName: message.sender?.displayName ?? null,
+        content: message.content,
+        type: message.type,
+        parentId: message.parentId,
+        isDeleted: message.isDeleted,
+        isEdited: message.isEdited,
+        replyCount: message.replyCount,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+      }),
+    );
 
     const formatted = this.formatMessage(message);
 
@@ -394,6 +421,13 @@ export class MessagesService {
       }),
     ]);
 
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.MESSAGE_UPDATED,
+      new MessageUpdatedEvent(messageId, {
+        content: dto.content,
+        isEdited: true,
+      }),
+    );
     return this.formatMessage(updated);
   }
 
@@ -467,6 +501,11 @@ export class MessagesService {
         })
         .catch((e) => this.logger.error('Failed to decrement replyCount', e));
     }
+
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.MESSAGE_DELETED,
+      new MessageDeletedEvent(messageId),
+    );
 
     return {
       ...this.formatMessage(deleted),

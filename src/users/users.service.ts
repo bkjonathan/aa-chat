@@ -5,16 +5,26 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { User, Prisma } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
+import {
+  SEARCH_EVENTS,
+  UserCreatedEvent,
+  UserUpdatedEvent,
+} from 'src/search/search.events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export type SafeUser = Omit<User, 'passwordHash'>;
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   // ─── Sanitize ────────────────────────────────────────
 
@@ -96,12 +106,28 @@ export class UsersService {
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     try {
-      return await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           ...data,
           settings: { create: {} },
         },
       });
+
+      this.eventEmitter.emit(
+        SEARCH_EVENTS.USER_CREATED,
+        new UserCreatedEvent({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          displayName: user.displayName,
+          bio: user.bio,
+          avatarUrl: user.avatarUrl,
+          status: user.status,
+          isVerified: user.isVerified,
+          createdAt: user.createdAt,
+        }),
+      );
+      return user;
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -126,6 +152,14 @@ export class UsersService {
         ...(dto.status !== undefined && { status: dto.status }),
       },
     });
+    this.eventEmitter.emit(
+      SEARCH_EVENTS.USER_UPDATED,
+      new UserUpdatedEvent(id, {
+        displayName: dto.displayName,
+        bio: dto.bio,
+        status: dto.status,
+      }),
+    );
     return this.sanitize(updated);
   }
 
