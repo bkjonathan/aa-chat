@@ -6,6 +6,10 @@ import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -16,7 +20,16 @@ import { HealthModule } from './health/health.module';
     }),
     DatabaseModule,
     HealthModule,
+    AuthModule,
+    UsersModule,
     // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
+  ],
+  providers: [
+    // Apply JWT guard globally — use @Public() to opt out
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule {}

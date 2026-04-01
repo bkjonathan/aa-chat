@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -46,9 +47,22 @@ async function bootstrap() {
   // Global response transform
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  // Add this block in bootstrap(), before await app.listen(port)
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Chat App API')
+    .setDescription('NestJS Chat Application REST API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+
+  logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
+
   await app.listen(port);
   logger.log(`Application running on http://localhost:${port}/api/v1`);
   logger.log(`Health check: http://localhost:${port}/api/v1/health`);
 }
 
-bootstrap();
+void bootstrap();

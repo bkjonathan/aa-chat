@@ -53,14 +53,13 @@ export class PrismaService
     if (this.configService.get<string>('app.nodeEnv') === 'production') {
       throw new Error('cleanDatabase() cannot run in production');
     }
-    const tableNames = await this.$queryRaw<{ tablename: string }[]>`
-      SELECT tablename FROM pg_tables
-      WHERE schemaname='public'
-      AND tablename NOT LIKE '_prisma%'
-    `;
-    for (const { tablename } of tableNames) {
+    const tableNames: { tableName: string }[] = await this.$queryRawUnsafe(
+      // cspell:disable-next-line
+      `SELECT tablename AS "tableName" FROM pg_tables WHERE schemaname='public' AND tablename NOT LIKE '_prisma%'`,
+    );
+    for (const { tableName } of tableNames) {
       await this.$executeRawUnsafe(
-        `TRUNCATE TABLE "${tablename}" RESTART IDENTITY CASCADE`,
+        `TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE`,
       );
     }
   }

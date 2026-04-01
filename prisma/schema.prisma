@@ -1,8 +1,369 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── ENUMS ───────────────────────────────────────────
+
+enum UserStatus {
+  online
+  away
+  dnd
+  offline
+}
+
+enum RoomType {
+  dm
+  group
+  channel
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+}
+
+enum MessageType {
+  text
+  image
+  file
+  audio
+  system
+}
+
+enum NotificationType {
+  mention
+  dm
+  reaction
+  invite
+}
+
+enum Theme {
+  light
+  dark
+  system
+}
+
+enum DeviceType {
+  web
+  android
+  ios
+}
+
+// ─── USERS & IDENTITY ────────────────────────────────
+
+model User {
+  id           String     @id @default(uuid())
+  username     String     @unique @db.VarChar(50)
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash")
+  displayName  String?    @map("display_name") @db.VarChar(100)
+  avatarUrl    String?    @map("avatar_url")
+  bio          String?    @db.VarChar(300)
+  status       UserStatus @default(offline)
+  lastSeenAt   DateTime?  @map("last_seen_at")
+  isVerified   Boolean    @default(false) @map("is_verified")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  refreshTokens         RefreshToken[]
+  settings              UserSettings?
+  roomMemberships       RoomMember[]
+  sentMessages          Message[]          @relation("SentMessages")
+  editedMessages        MessageEdit[]      @relation("EditedMessages")
+  reactions             MessageReaction[]
+  readReceipts          MessageRead[]
+  pinnedMessages        MessagePin[]
+  uploadedFiles         File[]
+  pushSubscriptions     PushSubscription[]
+  sentNotifications     Notification[]     @relation("ActorNotifications")
+  receivedNotifications Notification[]     @relation("RecipientNotifications")
+  createdRooms          Room[]             @relation("CreatedRooms")
+  blockedUsers          UserBlock[]        @relation("Blocker")
+  blockedByUsers        UserBlock[]        @relation("Blocked")
+  sentInvites           RoomInvite[]
+
+  @@index([lastSeenAt])
+  @@index([status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  deviceInfo Json?     @map("device_info")
+  ipAddress  String?   @map("ip_address")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model UserSettings {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  notificationSound    Boolean  @default(true) @map("notification_sound")
+  desktopNotifications Boolean  @default(true) @map("desktop_notifications")
+  theme                Theme    @default(system)
+  language             String   @default("en") @db.VarChar(10)
+  timezone             String   @default("UTC") @db.VarChar(64)
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model UserBlock {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@map("user_blocks")
+}
+
+// ─── ROOMS & MEMBERSHIP ──────────────────────────────
+
+model Room {
+  id            String    @id @default(uuid())
+  type          RoomType
+  name          String?   @db.VarChar(100)
+  slug          String?   @unique @db.VarChar(100)
+  description   String?
+  iconUrl       String?   @map("icon_url")
+  isPrivate     Boolean   @default(false) @map("is_private")
+  isArchived    Boolean   @default(false) @map("is_archived")
+  createdBy     String    @map("created_by")
+  lastMessageAt DateTime? @map("last_message_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  creator       User         @relation("CreatedRooms", fields: [createdBy], references: [id])
+  members       RoomMember[]
+  messages      Message[]
+  pins          MessagePin[]
+  invites       RoomInvite[]
+  files         File[]
+  notifications Notification[]
+
+  @@index([type])
+  @@index([lastMessageAt])
+  @@map("rooms")
+}
+
+model RoomMember {
+  id          String     @id @default(uuid())
+  roomId      String     @map("room_id")
+  userId      String     @map("user_id")
+  role        MemberRole @default(member)
+  nickname    String?    @db.VarChar(100)
+  isMuted     Boolean    @default(false) @map("is_muted")
+  mutedUntil  DateTime?  @map("muted_until")
+  lastReadAt  DateTime?  @map("last_read_at")
+  unreadCount Int        @default(0) @map("unread_count")
+  joinedAt    DateTime   @default(now()) @map("joined_at")
+  leftAt      DateTime?  @map("left_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+  @@map("room_members")
+}
+
+model RoomInvite {
+  id         String    @id @default(uuid())
+  roomId     String    @map("room_id")
+  invitedBy  String    @map("invited_by")
+  inviteCode String    @unique @map("invite_code") @db.VarChar(20)
+  maxUses    Int?      @map("max_uses")
+  useCount   Int       @default(0) @map("use_count")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  room    Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  inviter User @relation(fields: [invitedBy], references: [id])
+
+  @@index([inviteCode])
+  @@map("room_invites")
+}
+
+// ─── MESSAGES ────────────────────────────────────────
+
+model Message {
+  id         String      @id @default(uuid())
+  roomId     String      @map("room_id")
+  senderId   String      @map("sender_id")
+  parentId   String?     @map("parent_id")
+  type       MessageType @default(text)
+  content    String?
+  isEdited   Boolean     @default(false) @map("is_edited")
+  isDeleted  Boolean     @default(false) @map("is_deleted")
+  deletedAt  DateTime?   @map("deleted_at")
+  replyCount Int         @default(0) @map("reply_count")
+  metadata   Json?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  room      Room              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User              @relation("SentMessages", fields: [senderId], references: [id])
+  parent    Message?          @relation("ThreadReplies", fields: [parentId], references: [id])
+  replies   Message[]         @relation("ThreadReplies")
+  edits     MessageEdit[]
+  reactions MessageReaction[]
+  reads     MessageRead[]
+  pins      MessagePin[]
+  files     File[]
+  notifications Notification[]
+
+  @@index([roomId, createdAt(sort: Desc)])
+  @@index([senderId])
+  @@index([parentId])
+  @@map("messages")
+}
+
+model MessageEdit {
+  id              String   @id @default(uuid())
+  messageId       String   @map("message_id")
+  editorId        String   @map("editor_id")
+  previousContent String?  @map("previous_content")
+  editedAt        DateTime @default(now()) @map("edited_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  editor  User    @relation("EditedMessages", fields: [editorId], references: [id])
+
+  @@index([messageId])
+  @@map("message_edits")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  emoji     String   @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
+}
+
+model MessageRead {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  readAt    DateTime @default(now()) @map("read_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reads")
+}
+
+model MessagePin {
+  id        String   @id @default(uuid())
+  roomId    String   @map("room_id")
+  messageId String   @unique @map("message_id")
+  pinnedBy  String   @map("pinned_by")
+  pinnedAt  DateTime @default(now()) @map("pinned_at")
+
+  room    Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinner  User    @relation(fields: [pinnedBy], references: [id])
+
+  @@index([roomId])
+  @@map("message_pins")
+}
+
+// ─── FILES ───────────────────────────────────────────
+
+model File {
+  id           String   @id @default(uuid())
+  uploaderId   String   @map("uploader_id")
+  messageId    String?  @map("message_id")
+  roomId       String?  @map("room_id")
+  originalName String   @map("original_name")
+  s3Key        String   @unique @map("s3_key")
+  s3Bucket     String   @map("s3_bucket") @db.VarChar(100)
+  contentType  String   @map("content_type") @db.VarChar(100)
+  sizeBytes    BigInt   @map("size_bytes")
+  width        Int?
+  height       Int?
+  thumbnailKey String?  @map("thumbnail_key")
+  isPublic     Boolean  @default(false) @map("is_public")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  uploader User     @relation(fields: [uploaderId], references: [id])
+  message  Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  room     Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([messageId])
+  @@index([roomId])
+  @@map("files")
+}
+
+// ─── NOTIFICATIONS & PUSH ────────────────────────────
+
+model PushSubscription {
+  id         String     @id @default(uuid())
+  userId     String     @map("user_id")
+  endpoint   String     @unique
+  p256dhKey  String     @map("p256dh_key")
+  authKey    String     @map("auth_key")
+  deviceType DeviceType @default(web) @map("device_type")
+  userAgent  String?    @map("user_agent")
+  isActive   Boolean    @default(true) @map("is_active")
+  lastUsedAt DateTime?  @map("last_used_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String           @map("recipient_id")
+  actorId     String?          @map("actor_id")
+  type        NotificationType
+  roomId      String?          @map("room_id")
+  messageId   String?          @map("message_id")
+  isRead      Boolean          @default(false) @map("is_read")
+  pushSentAt  DateTime?        @map("push_sent_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  recipient User     @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+  room      Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([recipientId])
+  @@map("notifications")
 }

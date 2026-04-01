@@ -32,8 +32,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message:
-        typeof message === 'object' && 'message' in (message as object)
-          ? (message as any).message
+        typeof message === 'object' && 'message' in message
+          ? (message as { message: string }).message
           : message,
     };
 
