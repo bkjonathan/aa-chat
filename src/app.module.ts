@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RoomsModule } from './room/rooms.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     HealthModule,
     AuthModule,
     UsersModule,
+    RoomsModule,
     // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
   ],
   providers: [
