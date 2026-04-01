@@ -30,6 +30,7 @@ import {
 import { UserStatus } from '@prisma/client';
 import { RoomMembersService } from 'src/room/room-members.service';
 import { MessagesService } from 'src/messages/messages.service';
+import type { AuthenticatedSocket } from './ws-jwt.middleware';
 
 // ─── Socket event names (single source of truth) ─────
 
@@ -217,21 +218,6 @@ export class ChatGateway
     @MessageBody() dto: SendMessageDto,
   ) {
     try {
-      // Verify membership
-      const membership = await this.roomMembersService.findMembership(
-        dto.roomId,
-        client.userId,
-      );
-      if (!membership || membership.leftAt) {
-        throw new WsException('Not a member of this room');
-      }
-      if (membership.isMuted) {
-        if (!membership.mutedUntil || membership.mutedUntil > new Date()) {
-          throw new WsException('You are muted in this room');
-        }
-      }
-
-      // Persist message via MessagesService
       const message = await this.messagesService.create(client.userId, {
         roomId: dto.roomId,
         content: dto.content,
@@ -240,13 +226,12 @@ export class ChatGateway
         fileId: dto.fileId,
       });
 
-      // Broadcast to all room members (including sender for confirmation)
+      // Broadcast to ALL room members (including sender for confirmation)
       this.server.to(dto.roomId).emit(WS_EVENTS.MESSAGE_NEW, {
         ...message,
         clientMessageId: dto.clientMessageId,
       });
-
-      // Stop typing indicator if still active
+      // Clear typing indicator
       const typingKey = `${dto.roomId}:${client.userId}`;
       if (this.typingTimers.has(typingKey)) {
         clearTimeout(this.typingTimers.get(typingKey));
@@ -256,7 +241,6 @@ export class ChatGateway
         roomId: dto.roomId,
         userId: client.userId,
       });
-
       return {
         event: WS_EVENTS.SEND_MESSAGE,
         data: { success: true, messageId: message.id },
@@ -408,6 +392,47 @@ export class ChatGateway
   ) {
     await this.presenceService.heartbeat(client.userId);
     return { event: WS_EVENTS.HEARTBEAT, data: { ts: Date.now() } };
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('message:edit')
+  async handleEditMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { messageId: string; content: string },
+  ) {
+    try {
+      const updated = await this.messagesService.update(
+        body.messageId,
+        client.userId,
+        { content: body.content },
+      );
+      this.server.to(updated.roomId).emit(WS_EVENTS.MESSAGE_UPDATED, updated);
+      return { event: 'message:edit', data: { success: true } };
+    } catch (err) {
+      this.emitError(client, err.message);
+    }
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('message:delete')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: { messageId: string },
+  ) {
+    try {
+      const deleted = await this.messagesService.softDelete(
+        body.messageId,
+        client.userId,
+      );
+      this.server.to(deleted.roomId).emit(WS_EVENTS.MESSAGE_DELETED, {
+        messageId: body.messageId,
+        roomId: deleted.roomId,
+        deletedAt: new Date().toISOString(),
+      });
+      return { event: 'message:delete', data: { success: true } };
+    } catch (err) {
+      this.emitError(client, err.message);
+    }
   }
 
   // ─── Broadcast helpers ────────────────────────────────

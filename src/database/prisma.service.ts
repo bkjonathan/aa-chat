@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { applyPrismaMiddleware } from './prisma.middleware';
 
 @Injectable()
 export class PrismaService
@@ -31,6 +32,7 @@ export class PrismaService
 
   async onModuleInit() {
     await this.$connect();
+    applyPrismaMiddleware(this);
     this.logger.log('Database connected');
 
     // Log slow queries in development

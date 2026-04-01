@@ -14,12 +14,23 @@ import { RoomsModule } from './room/rooms.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { MessagesModule } from './messages/messages.module';
 import { RedisModule } from './redis/redis.module';
+import awsConfig from './config/aws.config';
+import pushConfig from './config/push.config';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, redisConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        redisConfig,
+        awsConfig,
+        pushConfig,
+      ],
       envFilePath: '.env',
     }),
     DatabaseModule,
@@ -30,6 +41,8 @@ import { RedisModule } from './redis/redis.module';
     MessagesModule,
     RedisModule,
     GatewayModule,
+    FilesModule,
+    NotificationsModule,
     // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
   ],
   providers: [
