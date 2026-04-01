@@ -12,9 +12,11 @@ import { HealthModule } from './health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, redisConfig],
+      envFilePath: '.env',
     }),
     DatabaseModule,
     HealthModule,
+    // Phase 2+: AuthModule, UsersModule, RoomsModule, etc.
   ],
 })
 export class AppModule {}
