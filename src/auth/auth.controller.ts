@@ -25,6 +25,7 @@ import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { User } from '@prisma/client';
 import type { JwtRefreshPayload } from './strategies/jwt-refresh.strategy';
+import { ThrottleAuth } from 'src/common/throttler/throttle.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -34,6 +35,7 @@ export class AuthController {
   // ─── Register ────────────────────────────────────────
 
   @Public()
+  @ThrottleAuth()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
@@ -45,7 +47,7 @@ export class AuthController {
   }
 
   // ─── Login ───────────────────────────────────────────
-
+  @ThrottleAuth()
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -62,7 +64,7 @@ export class AuthController {
   }
 
   // ─── Refresh ─────────────────────────────────────────
-
+  @ThrottleAuth()
   @Public()
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')

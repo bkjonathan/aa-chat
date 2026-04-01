@@ -187,6 +187,11 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
         number_of_replicas: 1,
         analysis: {
           analyzer: {
+            chat_analyzer: {
+              type: 'custom',
+              tokenizer: 'standard',
+              filter: ['lowercase', 'asciifolding', 'stop', 'snowball'],
+            },
             autocomplete_analyzer: {
               type: 'custom',
               tokenizer: 'standard',
@@ -203,6 +208,10 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
               type: 'edge_ngram',
               min_gram: 1,
               max_gram: 20,
+            },
+            snowball: {
+              type: 'snowball',
+              language: 'English',
             },
           },
         },
@@ -246,6 +255,11 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
         number_of_replicas: 1,
         analysis: {
           analyzer: {
+            chat_analyzer: {
+              type: 'custom',
+              tokenizer: 'standard',
+              filter: ['lowercase', 'asciifolding', 'stop', 'snowball'],
+            },
             autocomplete_analyzer: {
               type: 'custom',
               tokenizer: 'standard',
@@ -262,6 +276,10 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
               type: 'edge_ngram',
               min_gram: 1,
               max_gram: 20,
+            },
+            snowball: {
+              type: 'snowball',
+              language: 'English',
             },
           },
         },
