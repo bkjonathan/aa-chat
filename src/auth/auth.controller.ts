@@ -6,6 +6,8 @@ import {
   HttpCode,
   HttpStatus,
   Get,
+  Ip,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -42,8 +44,12 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email or username already in use' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(
+    @Body() dto: RegisterDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.register(dto, ip, userAgent);
   }
 
   // ─── Login ───────────────────────────────────────────
@@ -59,8 +65,12 @@ export class AuthController {
     description: 'Login successful, returns token pair',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  login(@CurrentUser() user: User) {
-    return this.authService.login(user);
+  login(
+    @CurrentUser() user: User,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.login(user, ip, userAgent);
   }
 
   // ─── Refresh ─────────────────────────────────────────
@@ -73,8 +83,12 @@ export class AuthController {
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({ status: 200, description: 'New token pair issued' })
   @ApiResponse({ status: 401, description: 'Refresh token invalid or expired' })
-  refresh(@CurrentUser() user: JwtRefreshPayload & { refreshToken: string }) {
-    return this.authService.refreshTokens(user);
+  refresh(
+    @CurrentUser() user: JwtRefreshPayload & { refreshToken: string },
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.refreshTokens(user, ip, userAgent);
   }
 
   // ─── Logout ──────────────────────────────────────────

@@ -53,7 +53,11 @@ export class AuthService {
 
   // ─── Register ────────────────────────────────────────
 
-  async register(dto: RegisterDto): Promise<AuthResponse> {
+  async register(
+    dto: RegisterDto,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<AuthResponse> {
     const [existingEmail, existingUsername] = await Promise.all([
       this.usersService.findByEmail(dto.email),
       this.usersService.findByUsername(dto.username),
@@ -72,7 +76,7 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(user);
-    await this.storeRefreshToken(user.id, tokens.refreshToken);
+    await this.storeRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
 
     this.logger.log(`New user registered: ${user.email}`);
 
@@ -84,9 +88,13 @@ export class AuthService {
 
   // ─── Login ───────────────────────────────────────────
 
-  async login(user: User): Promise<AuthResponse> {
+  async login(
+    user: User,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<AuthResponse> {
     const tokens = await this.generateTokens(user);
-    await this.storeRefreshToken(user.id, tokens.refreshToken);
+    await this.storeRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
 
     // Update last seen
     await this.usersService.updateLastSeen(user.id);
@@ -101,6 +109,8 @@ export class AuthService {
 
   async refreshTokens(
     payload: JwtRefreshPayload & { refreshToken: string },
+    ip?: string,
+    userAgent?: string,
   ): Promise<TokenPair> {
     const { sub: userId, refreshToken } = payload;
 
@@ -138,7 +148,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
 
     const tokens = await this.generateTokens(user);
-    await this.storeRefreshToken(userId, tokens.refreshToken);
+    await this.storeRefreshToken(userId, tokens.refreshToken, ip, userAgent);
 
     return tokens;
   }
@@ -203,6 +213,8 @@ export class AuthService {
   private async storeRefreshToken(
     userId: string,
     rawToken: string,
+    ipAddress?: string,
+    userAgent?: string,
   ): Promise<void> {
     const tokenHash = await bcrypt.hash(rawToken, this.SALT_ROUNDS);
 
@@ -216,9 +228,39 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expirationDays);
 
-    await this.prisma.refreshToken.create({
-      data: { userId, tokenHash, expiresAt },
-    });
+    const deviceInfo = userAgent ? { userAgent } : null;
+
+    let existingToken: any = null;
+    if (ipAddress || deviceInfo) {
+      existingToken = await this.prisma.refreshToken.findFirst({
+        where: {
+          userId,
+          ipAddress: ipAddress || null,
+          ...(deviceInfo ? { deviceInfo: { equals: deviceInfo } } : {}),
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+      });
+    }
+
+    if (existingToken) {
+      // Update existing token session for the same IP/Device
+      await this.prisma.refreshToken.update({
+        where: { id: existingToken.id },
+        data: { tokenHash, expiresAt },
+      });
+    } else {
+      // Create new token session
+      await this.prisma.refreshToken.create({
+        data: { 
+          userId, 
+          tokenHash, 
+          expiresAt, 
+          ipAddress: ipAddress || null, 
+          ...(deviceInfo ? { deviceInfo } : {}) 
+        },
+      });
+    }
 
     // Cleanup: remove old expired tokens for this user
     await this.prisma.refreshToken.deleteMany({

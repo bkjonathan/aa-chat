@@ -1,0 +1,1 @@
+User wants to limit multiple token records for the same device.
